@@ -38,7 +38,9 @@ if [ ! -d "${APP_PATH}" ]; then
 fi
 
 echo "==> Export .app"
-rm -rf "${BUILD_DIR:?}/${APP_NAME}"
+if [ -d "${BUILD_DIR}/${APP_NAME}" ]; then
+  rm -rf "${BUILD_DIR:?}/${APP_NAME}"
+fi
 cp -R "${APP_PATH}" "${BUILD_DIR}/"
 
 echo "==> Create DMG (verbose)"
