@@ -1,0 +1,27 @@
+# DXO-24 Controller — .gitignore
+# Xcode
+DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.xcworkspace
+*.xcscmblueprint
+
+# Swift Package Manager / Swift build artifacts
+.build/
+*.swiftpm
+
+# macOS system
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Archives and dumps
+*.ipa
+*.dSYM
+*.symbols
+*.dmg

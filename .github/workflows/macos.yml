@@ -1,0 +1,8 @@
+Name: macOS Build
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -project DXO24Controller.xcodeproj -scheme DXO24Controller -destination 'platform=macOS' build
