@@ -11,8 +11,10 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      - name: Verify Xcode
+        run: |
+          xcode-select -p
+          xcodebuild -version
       - name: Build and package DMG
         run: bash scripts/package-dmg.sh
       - name: Upload DMG artifact

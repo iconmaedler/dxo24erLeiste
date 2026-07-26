@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+cd "${REPO_ROOT}"
+
 PROJECT="DXO24Controller.xcodeproj"
 SCHEME="DXO24Controller"
 CONFIGURATION=Release
@@ -34,10 +38,23 @@ if [ ! -d "${APP_PATH}" ]; then
 fi
 
 echo "==> Export .app"
-rm -rf "${BUILD_DIR:?}/${APP_NAME}" || true
+if [ -d "${BUILD_DIR}/${APP_NAME}" ]; then
+  rm -rf "${BUILD_DIR:?}/${APP_NAME}"
+fi
 cp -R "${APP_PATH}" "${BUILD_DIR}/"
 
-echo "==> Create DMG"
-hdiutil create -srcfolder "${BUILD_DIR}/${APP_NAME}" -volname "${SCHEME}" -fs HFS+ "${DMG_NAME}"
+echo "==> Create DMG (verbose)"
+hdiutil create -ov -verbose \
+  -srcfolder "${BUILD_DIR}/${APP_NAME}" \
+  -volname "${SCHEME}" \
+  -fs HFS+ \
+  "${DMG_NAME}"
 
+if [ ! -f "${DMG_NAME}" ]; then
+  echo "ERROR: hdiutil did not create ${DMG_NAME}" >&2
+  exit 1
+fi
+
+echo "==> DMG contents"
+ls -lh "${DMG_NAME}"
 echo "==> DMG ready: ${DMG_NAME}"
