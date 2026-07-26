@@ -4,7 +4,6 @@
 // Besitzt die alleinige Wahrheitsquelle für den Gerätezustand.
 
 import Foundation
-import Combine
 
 final class DeviceViewModel: ObservableObject {
     @Published var device: DXO24Device = .flatPreset
@@ -13,11 +12,9 @@ final class DeviceViewModel: ObservableObject {
     @Published var headroomWarning: String?
 
     private let communication: DXO24Communication
-    private var cancellables: Set<AnyCancellable> = []
 
-    init(communication: DXO24Communication = StubCommunication()) {
+    init(communication: DXO24Communication = RealCommunication()) {
         self.communication = communication
-        bindCommunication()
     }
 
     //MARK: - Verbindung
@@ -121,18 +118,6 @@ final class DeviceViewModel: ObservableObject {
     }
 
     //MARK: - Privat
-
-    private func bindCommunication() {
-        guard let stub = communication as? StubCommunication else { return }
-        stub.$isConnected
-            .receive(on: DispatchQueue.main)
-            .assign(to: \.isConnected, on: self)
-            .store(in: &cancellables)
-        stub.$currentState
-            .receive(on: DispatchQueue.main)
-            .assign(to: \.device, on: self)
-            .store(in: &cancellables)
-    }
 
     @MainActor
     private func handleResponse(_ response: DeviceResponse) {

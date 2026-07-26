@@ -22,6 +22,8 @@ struct ContentView: View {
                 Label("Calibration", systemImage: "mic.fill").tag("calibration")
                 Label("Frequency Response", systemImage: "waveform.path").tag("response")
                 Label("Presets", systemImage: "folder.fill").tag("presets")
+                Label("Raum-Planer", systemImage: "cube.transparent").tag("planner")
+                Label("Endstufen", systemImage: "server.rack").tag("amps")
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 220)
             .listStyle(.sidebar)
@@ -34,6 +36,8 @@ struct ContentView: View {
                     case "calibration": CalibrationView()
                     case "response": FrequencyResponseView()
                     case "presets": PresetsView()
+                    case "planner": RoomPlannerView()
+                    case "amps": AmplifierView()
                     default: HomeView(expertise: expertise)
                     }
                 }
@@ -72,6 +76,8 @@ struct ContentView: View {
         case "calibration": return "Room Calibration"
         case "response": return "Frequency Response"
         case "presets": return "Presets"
+        case "planner": return "Raum-Planer"
+        case "amps": return "Endstufen"
         default: return "DXO-24 Controller"
         }
     }
