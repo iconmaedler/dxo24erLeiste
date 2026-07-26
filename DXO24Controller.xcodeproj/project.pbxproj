@@ -16,7 +16,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A0002 /* DXO24ControllerApp.swift */ = {isa = PBXFileReference; path = DXO24ControllerApp.swift; sourceTree = "<group>"; };
+		A0002 /* DXO24ControllerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift.source; path = DXO24ControllerApp.swift; sourceTree = "<group>"; };
+		A0004 /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Models; sourceTree = "<group>"; };
+		A0006 /* ViewModels */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ViewModels; sourceTree = "<group>"; };
+		A0008 /* Views */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Views; sourceTree = "<group>"; };
+		A0010 /* Services */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Services; sourceTree = "<group>"; };
+		A0012 /* DesignSystem */ = {isa = PBXFileReference; lastKnownFileType = folder; path = DesignSystem; sourceTree = "<group>"; };
 		A0013 /* DXO24Controller.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DXO24Controller.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -25,14 +30,12 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A0015 = {isa = PBXGroup; children = (A0002 /* DXO24ControllerApp.swift */, A0004 /* Models */, A0006 /* ViewModels */, A0008 /* Views */, A0010 /* Services */, A0012 /* DesignSystem */); path = Sources; sourceTree = "<group>"; };
-		A0004 /* Models */ = {isa = PBXGroup; children = (A0016 /* DXO24Device.swift */, A0017 /* EQBand.swift */, A0018 /* ExpertiseLevel.swift */, A0019 /* Preset.swift */, A0020 /* RoomParameters.swift */); path = Models; sourceTree = "<group>"; };
-		A0006 /* ViewModels */ = {isa = PBXGroup; children = (A0022 /* DeviceViewModel.swift */); path = ViewModels; sourceTree = "<group>"; };
-		A0008 /* Views */ = {isa = PBXGroup; children = (A0023 /* CalibrationView.swift */, A0024 /* CalibrationWizard.swift */, A0025 /* ContentView.swift */, A0026 /* FrequencyResponseView.swift */); path = Views; sourceTree = "<group>"; };
-		A0010 /* Services */ = {isa = PBXGroup; children = (A0030 /* CalculationService.swift */, A0031 /* Audio */, A0032 /* Communication */); path = Services; sourceTree = "<group>"; };
-		A0012 /* DesignSystem */ = {isa = PBXGroup; children = (A0033 /* Core.swift */, A0034 /* Tokens.swift */); path = DesignSystem; sourceTree = "<group>"; };
-		A0031 /* Audio */ = {isa = PBXGroup; children = (A0035 /* MeasurementEngine.swift */, A0036 /* MeasurementService.swift */); path = Audio; sourceTree = "<group>"; };
-		A0032 /* Communication */ = {isa = PBXGroup; children = (A0037 /* CommunicationError.swift */, A0038 /* DXO24CommunicationProtocol.swift */, A0039 /* StubCommunication.swift */); path = Communication; sourceTree = "<group>"; };
+		A0015 = {isa = PBXGroup; children = (A0002 /* DXO24ControllerApp.swift */, A0004 /* Models */, A0006 /* ViewModels */, A0008 /* Views */, A0010 /* Services */, A0012 /* DesignSystem */); sourceTree = "<group>"; };
+		A0004 /* Models */ = {isa = PBXGroup; children = (); path = Models; sourceTree = "<group>"; };
+		A0006 /* ViewModels */ = {isa = PBXGroup; children = (); path = ViewModels; sourceTree = "<group>"; };
+		A0008 /* Views */ = {isa = PBXGroup; children = (); path = Views; sourceTree = "<group>"; };
+		A0010 /* Services */ = {isa = PBXGroup; children = (); path = Services; sourceTree = "<group>"; };
+		A0012 /* DesignSystem */ = {isa = PBXGroup; children = (); path = DesignSystem; sourceTree = "<group>"; };
 		A0040 = {isa = PBXGroup; children = (A0013 /* DXO24Controller.app */); name = Products; sourceTree = "<group>"; };
 		A0041 = {isa = PBXGroup; children = (A0015, A0040); sourceTree = "<group>"; };
 /* End PBXGroup section */
@@ -42,7 +45,7 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A0047 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; }; buildConfigurationList = A0048; classPrefix = ""; classes = {}; objectVersion = 56; targets = (A0042 /* DXO24Controller */); };
+		A0047 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; }; buildConfigurationList = A0048; classPrefix = ""; classes = {}; objectVersion = 56; sources = (); targets = (A0042 /* DXO24Controller */); };
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -54,10 +57,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		A0049 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_STRICT_OBJC_MSGSEND = YES; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_DIALECT = gnu99; GCC_DYNAMIC_NO_PIC = NO; GCC_NO_COMMON_BLOCKS = YES; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)"); GCC_WARN_64_TO_32_BIT_CONVERSION = YES; GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR; GCC_WARN_UNDECLARED_SELECTOR = YES; GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE; GCC_WARN_UNUSED_FUNCTION = YES; GCC_WARN_UNUSED_VARIABLE = YES; MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE; MTL_FAST_MATH = YES; ONLY_ACTIVE_ARCH = YES; SDKROOT = macosx; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
-		A0050 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_STRICT_OBJC_MSGSEND = YES; ENABLE_TESTABILITY = NO; GCC_C_LANGUAGE_DIALECT = gnu99; GCC_NO_COMMON_BLOCKS = YES; GCC_OPTIMIZATION_LEVEL = s; GCC_WARN_64_TO_32_BIT_CONVERSION = YES; GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR; GCC_WARN_UNDECLARED_SELECTOR = YES; GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE; GCC_WARN_UNUSED_FUNCTION = YES; GCC_WARN_UNUSED_VARIABLE = YES; MTL_ENABLE_DEBUG_INFO = NO; MTL_FAST_MATH = YES; SDKROOT = macosx; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
-		A0051 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor; CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = "DXO24Controller/Info.plist"; INFOPLIST_KEY_NSHumanReadableCopyright = ""; INFOPLIST_KEY_NSMainStoryboardFile = ""; INFOPLIST_KEY_NSPrincipalClass = ""; LD_RUNPATH_SEARCH_PATHS = ("@executable_path/../Frameworks",); MACOSX_DEPLOYMENT_TARGET = 13.5; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.dxo24.controller; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; }; name = Debug; };
-		A0052 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor; CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = "DXO24Controller/Info.plist"; INFOPLIST_KEY_NSHumanReadableCopyright = ""; INFOPLIST_KEY_NSMainStoryboardFile = ""; INFOPLIST_KEY_NSPrincipalClass = ""; LD_RUNPATH_SEARCH_PATHS = ("@executable_path/../Frameworks",); MACOSX_DEPLOYMENT_TARGET = 13.5; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.dxo24.controller; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; }; name = Release; };
+		A0049 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_STRICT_OBJC_MSGSEND = YES; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_DIALECT = gnu99; GCC_DYNAMIC_NO_PIC = NO; GCC_NO_COMMON_BLOCKS = YES; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1"; GCC_WARN_64_TO_32_BIT_CONVERSION = YES; GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR; GCC_WARN_UNDECLARED_SELECTOR = YES; GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE; GCC_WARN_UNUSED_FUNCTION = YES; GCC_WARN_UNUSED_VARIABLE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE; MTL_FAST_MATH = YES; ONLY_ACTIVE_ARCH = YES; SDKROOT = macosx; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; };
+		A0050 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_STRICT_OBJC_MSGSEND = YES; ENABLE_TESTABILITY = NO; GCC_C_LANGUAGE_DIALECT = gnu99; GCC_NO_COMMON_BLOCKS = YES; GCC_OPTIMIZATION_LEVEL = s; GCC_WARN_64_TO_32_BIT_CONVERSION = YES; GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR; GCC_WARN_UNDECLARED_SELECTOR = YES; GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE; GCC_WARN_UNUSED_FUNCTION = YES; GCC_WARN_UNUSED_VARIABLE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; MTL_ENABLE_DEBUG_INFO = NO; MTL_FAST_MATH = YES; SDKROOT = macosx; STRIP_INSTALLED_PRODUCT = YES; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; };
+		A0051 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor; CODE_SIGN_ENTITLEMENTS = DXO24Controller/DXO24Controller.entitlements; CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = DXO24Controller/Info.plist; INFOPLIST_KEY_NSHumanReadableCopyright = ""; INFOPLIST_KEY_NSMainStoryboardFile = ""; INFOPLIST_KEY_NSPrincipalClass = ""; LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks"; MACOSX_DEPLOYMENT_TARGET = 13.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.DXO24Controller; PRODUCT_NAME = "$(TARGET_NAME)"; PROVISIONING_PROFILE_SPECIFIER = ""; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; };
+		A0052 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor; CODE_SIGN_ENTITLEMENTS = DXO24Controller/DXO24Controller.entitlements; CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Automatic; COMBINE_HIDPI_IMAGES = YES; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = DXO24Controller/Info.plist; INFOPLIST_KEY_NSHumanReadableCopyright = ""; INFOPLIST_KEY_NSMainStoryboardFile = ""; INFOPLIST_KEY_NSPrincipalClass = ""; LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks"; MACOSX_DEPLOYMENT_TARGET = 13.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.DXO24Controller; PRODUCT_NAME = "$(TARGET_NAME)"; PROVISIONING_PROFILE_SPECIFIER = ""; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
