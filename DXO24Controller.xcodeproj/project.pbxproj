@@ -80,7 +80,7 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A0001A /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; TargetAttributes = {A00016 = {CreatedOnToolsVersion = 15.0; }; }; }; buildConfigurationList = A0001B; classPrefix = ""; projectDirPath = ""; projectRoot = ""; targets = (A00016); };
+		A0001A /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; TargetAttributes = {A00016 = {CreatedOnToolsVersion = 15.0; }; }; }; buildConfigurationList = A0001B; classes = {}; classPrefix = ""; objectVersion = 56; paths = (); projectDirPath = ""; projectRoot = ""; targets = (A00016); };
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
