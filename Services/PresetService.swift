@@ -8,19 +8,25 @@ enum PresetService {
     static let folderName = "DXO24Controller"
     static let presetExtension = "dxo24"
 
-    static var presetsDirectory: URL {
+    static var presetsDirectory: URL? {
         let fm = FileManager.default
-        let url = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
-            .appendingPathComponent(folderName, isDirectory: true)
-        if !fm.fileExists(atPath: url.path) {
-            try? fm.createDirectory(at: url, withIntermediateDirectories: true)
+        guard let url = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
         }
-        return url
+        return url.appendingPathComponent(folderName, isDirectory: true)
     }
 
     static func save(_ preset: Preset) throws -> URL {
-        let url = presetsDirectory
+        guard let directory = PresetService.presetsDirectory else {
+            throw NSError(domain: "PresetServiceError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot access Application Support directory"])
+        }
+
+        // Ensure directory exists
+        if !FileManager.default.fileExists(atPath: directory.path) {
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        }
+
+        let url = directory
             .appendingPathComponent(preset.name)
             .appendingPathExtension(presetExtension)
         let data = try JSONEncoder().encode(preset)
@@ -35,15 +41,24 @@ enum PresetService {
     }
 
     static func listPresets() throws -> [URL] {
+        guard let directory = PresetService.presetsDirectory else {
+            throw NSError(domain: "PresetServiceError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot access Application Support directory"])
+        }
+        
         let fm = FileManager.default
-        return try fm.contentsOfDirectory(at: presetsDirectory, includingPropertiesForKeys: nil)
+        return try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == presetExtension }
     }
 
     static func delete(_ preset: Preset) throws {
-        let url = presetsDirectory
+        guard let directory = PresetService.presetsDirectory else {
+            throw NSError(domain: "PresetServiceError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot access Application Support directory"])
+        }
+        let url = directory
             .appendingPathComponent(preset.name)
             .appendingPathExtension(presetExtension)
         try FileManager.default.removeItem(at: url)
     }
 }
+
+// End of PresetService.swift

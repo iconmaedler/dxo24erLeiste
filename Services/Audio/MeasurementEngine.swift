@@ -1,70 +1,134 @@
 // DXO24Controller/Services/Audio/MeasurementEngine.swift
 //
-// Audio measurement engine using AVAudioEngine for playback + capture.
-// Computes FFT via Accelerate and produces a frequency-domain transfer function.
-// This file is macOS 13+ and imports AVFoundation only — no SwiftUI.
-
+// Real audio measurement engine using AVAudioEngine.
+// Plays a logarithmic sweep, captures the microphone response via an input tap,
+// and computes the FFT magnitude spectrum with Accelerate/vDSP.
+//
 import AVFoundation
 import Accelerate
+import os
 
 struct MeasurementEngine {
-    let sampleRate: Double = 48_000
-    let fftSize: Int = 16_384
+    static let defaultSampleRate: Double = 48_000
+    static let defaultFFTSize: Int = 16_384
+
+    struct FrequencyBin {
+        let frequency: Double  // Hz
+        let magnitude: Double  // dB
+    }
 
     enum MeasurementError: LocalizedError {
         case audioSessionUnavailable
         case recordingFailed
         case playbackFailed
+        case calibrationFileMissing
 
         var errorDescription: String? {
             switch self {
             case .audioSessionUnavailable: return "Audio session could not be initialized."
             case .recordingFailed:         return "Microphone recording failed."
             case .playbackFailed:          return "Playback of sweep signal failed."
+            case .calibrationFileMissing:  return "Calibration file not found."
             }
         }
     }
 
-    func measureFrequencyResponse(duration: TimeInterval = 15.0) async throws -> [(frequency: Double, magnitude: Double)] {
-        // Note: AVAudioSession/AVAudioApplication are iOS-only APIs and do not exist on macOS.
-        // On macOS, starting AVAudioEngine with an input tap triggers the microphone TCC
-        // permission prompt automatically (backed by NSMicrophoneUsageDescription in Info.plist).
+    /// Runs a logarithmic sweep for `duration` seconds, captures the response, and returns the FFT bins.
+    static func measureRoomResponse(duration: TimeInterval = 15.0) async throws -> [FrequencyBin] {
+        // Setup audio session
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setCategory(.record, mode: .measurement, options: [.mixWithOthers, .allowBluetooth])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            throw MeasurementError.audioSessionUnavailable
+        }
+
         let engine = AVAudioEngine()
         let player = AVAudioPlayerNode()
-        let input = engine.inputNode
-        let output = engine.outputNode
+        let inputNode = engine.inputNode
+        let outputNode = engine.outputNode
 
+        // Attach and connect player -> output
         engine.attach(player)
-        engine.connect(player, to: output, format: output.inputFormat(forBus: 0))
-        engine.connect(input, to: engine.mainMixerNode, format: input.inputFormat(forBus: 0))
+        guard let outputFormat = outputNode.inputFormat(forBus: 0) else {
+            throw MeasurementError.playbackFailed
+        }
+        engine.connect(player, to: outputNode, format: outputFormat)
 
-        try engine.start()
-        let sweepBuffer = try generateLogarithmicSweep(duration: duration)
-        let playbackStart = Date()
+        // Capture buffer for input tap
+        let capture = SampleCaptureBuffer()
+        let inputFormat = inputNode.inputFormat(forBus: 0)
+
+        inputNode.installTap(onBus: 0,
+                              bufferSize: AVAudioFrameCount(defaultFFTSize),
+                              format: inputFormat) { buffer, _ in
+            guard let floatData = buffer.floatChannelData else { return }
+            let channel = floatData[0]
+            let count = Int(buffer.frameLength)
+            capture.append(samples: Array(UnsafeBufferPointer(start: channel, count: count)))
+        }
+
+        // Start engine
+        do {
+            try engine.start()
+        } catch {
+            throw MeasurementError.playbackFailed
+        }
+
+        // Generate and play sweep
+        let sweepBuffer = try generateLogarithmicSweep(duration: duration, format: outputFormat)
         player.play()
         player.scheduleBuffer(sweepBuffer, at: nil, options: .interrupts, completionHandler: nil)
 
-        // Capture recording via AVAudioEngine offline-style buffer fill.
-        // In a production build this would be driven by AVAudioFile / tap callbacks.
-        // Here we simulate a measured transfer function based on room modes.
-        try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000) + 200_000_000)
-        player.stop()
-        engine.detach(player)
-        engine.stop()
+        // Wait for sweep + settle
+        try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000) + 500_000_000)
 
-        let simulated = SimulationHelper.simulatedTransferFunction()
-        return simulated
+        player.stop()
+        engine.stop()
+        inputNode.removeTap(onBus: 0)
+
+        try audioSession.setActive(false, options: .shouldInterruptOtherSound)
+
+        let samples = capture.flush()
+        guard samples.count >= defaultFFTSize else {
+            throw MeasurementError.recordingFailed
+        }
+
+        // FFT on the first window centered around the sweep response.
+        let windowStart = max(0, (samples.count - defaultFFTSize) / 2)
+        let windowSlice = Array(samples[windowStart..<windowStart + defaultFFTSize])
+        let magnitudes = try performRealFFT(on: windowSlice)
+
+        // Map bins to frequencies
+        var result: [FrequencyBin] = []
+        let binCount = magnitudes.count
+        let freqResolution = defaultSampleRate / Double(binCount)
+        for i in 0..<binCount {
+            let freq = Double(i) * freqResolution
+            guard freq >= 20 && freq <= 20_000 else { continue } // Filter extreme edges
+            let db = 20.0 * log10(max(Double(magnitudes[i]), 1e-12))
+            result.append(FrequencyBin(frequency: freq, magnitude: db))
+        }
+        return result
     }
 
-    private func generateLogarithmicSweep(duration: TimeInterval) throws -> AVAudioPCMBuffer {
-        let sampleRate = Float(sampleRate)
-        let frameCount = UInt32(duration * sampleRate)
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
+    // MARK: - Sweep generator (logarithmic 20 Hz -> 20 kHz)
+
+    private static func generateLogarithmicSweep(duration: TimeInterval, format: AVAudioFormat) throws -> AVAudioPCMBuffer {
+        let sampleRate = Float(format.sampleRate)
+        let frameCount = UInt32(duration * Double(sampleRate))
+        let channels = format.channelCount
+
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
             throw MeasurementError.playbackFailed
         }
         buffer.frameLength = frameCount
-        guard let channelData = buffer.floatChannelData else { throw MeasurementError.playbackFailed }
+        buffer.fill(float: 0.0)
+
+        guard let channelData = buffer.floatChannelData?.pointee else {
+            throw MeasurementError.playbackFailed
+        }
 
         let sweepStart: Float = 20.0
         let sweepEnd: Float = 20_000.0
@@ -77,21 +141,64 @@ struct MeasurementEngine {
             let logF = logStart + t * logRange
             let f = powf(2.0, logF)
             let angle = 2.0 * .pi * f * (Float(n) / sampleRate)
-            channelData[0][n] = sinf(angle) * 0.5
+            let value = sinf(angle) * 0.5
+            
+            // Write to all channels for multi-channel audio
+            for ch in 0..<channels {
+                channelData[ch * Int(frameCount) + n] = value
+            }
         }
         return buffer
     }
-}
 
-private enum SimulationHelper {
-    static func simulatedTransferFunction() -> [(frequency: Double, magnitude: Double)] {
-        let modes = CalculationService.calculateRoomModes(width: 5.0, depth: 4.0, height: 2.8)
-        let base: [Double] = stride(from: 20.0, through: 20_000.0, by: 20.0).map { $0 }
-        return base.map { freq in
-            let closest = modes.min { abs($0.frequency - freq) < abs($1.frequency - freq) } ?? (frequency: freq, magnitude: 0.0)
-            let falloff = -0.015 * log10(freq / 20.0)
-            let magnitude = falloff + (closest.magnitude * 6.0)
-            return (frequency: freq, magnitude: magnitude)
+    // MARK: - Real FFT (vDSP)
+
+    private static func performRealFFT(on samples: [Float]) throws -> [Float] {
+        let n = samples.count
+        guard n > 0, (n & (n - 1)) == 0 else {
+            throw MeasurementError.playbackFailed // must be power of two
         }
+        guard let fftSetup = vDSP_create_fftsetup(vDSP_Length(log2(Float(n))), FFTRadix(kFFTRadix2)) else {
+            throw MeasurementError.playbackFailed
+        }
+        
+        var real = samples
+        var imag = [Float](repeating: 0, count: n)
+        var split = DSPSplitComplex(realp: &real, imagp: &imag)
+
+        vDSP_fft_zip(fftSetup, &split, 1, vDSP_Length(log2(Float(n))), FFTDirection(FFT_FORWARD))
+
+        var magnitudes = [Float](repeating: 0, count: n / 2)
+        vDSP_zvmags(&split, 1, &magnitudes, 1, vDSP_Length(magnitudes.count))
+
+        // Convert to amplitude (square root of magnitude squared)
+        var amplitudes = [Float](repeating: 0, count: magnitudes.count)
+        vDSP_vsqrt(magnitudes, 1, &amplitudes, 1, vDSP_Length(amplitudes.count))
+        
+        vDSP_destroy_fftsetup(fftSetup)
+        return amplitudes
     }
 }
+
+// MARK: - Thread-safe capture buffer
+
+final class SampleCaptureBuffer: @unchecked Sendable {
+    private var samples: [Float] = []
+    private let lock = NSLock()
+
+    append(samples: [Float]) {
+        lock.lock()
+        samples.append(contentsOf: samples)
+        lock.unlock()
+    }
+
+    func flush() -> [Float] {
+        lock.lock()
+        let result = samples
+        samples.removeAll(keepingCapacity: false)
+        lock.unlock()
+        return result
+    }
+}
+
+// End of MeasurementEngine.swift
