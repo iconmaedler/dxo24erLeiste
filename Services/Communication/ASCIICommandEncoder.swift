@@ -23,7 +23,7 @@ struct ASCIICommandEncoder {
         case let .setMute(input, output):
             let inputStr = input ? "1" : "0"
             let outputStr = output ? "1" : "0"
-            return "SETPUT \(inputStr) \(outputStr)\r"
+            return "SETMUTE \(inputStr) \(outputStr)\r"
         case let .setCrossover(frequency, slope):
             return "XCROSS \(String(format: "%.0f", frequency)) \(slope)\r"
         case let .setEQBand(index, band):

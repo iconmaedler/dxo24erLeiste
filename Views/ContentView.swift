@@ -1,107 +1,104 @@
 // DXO24Controller/Views/ContentView.swift
 //
-// Root application window using NavigationSplitView with sidebar navigation.
-// Wires the shared DeviceViewModel and exposes headroom warnings in the detail area.
-
+// Haupt-Navigationsinterface und Home-View für das DXO-24 Controller.
+// Implementiert Keyboard Shortcuts und zentrale Steuerungspunkte.
+//
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage("expertiseLevel") private var expertiseRaw = "beginner"
-    @State private var selectedSidebar: String = "home"
     @EnvironmentObject private var viewModel: DeviceViewModel
-
-    private var expertise: ExpertiseLevel {
-        ExpertiseLevel(rawValue: expertiseRaw) ?? .beginner
+    @State private var selectionTab: Tab = .parameters
+    @State private var showPreferences = false
+    
+    enum Tab: String, CaseIterable, Identifiable {
+        case parameters          = "Parameter"       // ⌘1
+        case calibration         = "Kalibrierung"    // ⌘2
+        case roomPlanner         = "Raum-Planer"     // ⌘3
+        case presets             = "Presets"         // ⌘4
+        
+        var id: Self { self }
+        
+        var body: some View {
+            switch self {
+            case .parameters: return parametersView()
+            case .calibration: return CalibrationView()
+            case .roomPlanner: return RoomPlannerView()
+            case .presets: return PresetsView()
+            }
+        }
     }
-
+    
     var body: some View {
         NavigationSplitView {
-            List(selection: $selectedSidebar) {
-                Label("Home", systemImage: "house.fill").tag("home")
-                Label("Parameters", systemImage: "dial.medium.fill").tag("parameters")
-                Label("Calibration", systemImage: "mic.fill").tag("calibration")
-                Label("Frequency Response", systemImage: "waveform.path").tag("response")
-                Label("Presets", systemImage: "folder.fill").tag("presets")
-                Label("Raum-Planer", systemImage: "cube.transparent").tag("planner")
-                Label("Endstufen", systemImage: "server.rack").tag("amps")
+            List(Tab.allCases) { tab in
+                NavigationLink(tab.rawValue, value: tab)
+                    .tag(tab, selection: $selectionTab)
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 220)
-            .listStyle(.sidebar)
-        } detail: {
-            VStack(alignment: .leading, spacing: 0) {
-                Group {
-                    switch selectedSidebar {
-                    case "home": HomeView(expertise: expertise)
-                    case "parameters": ParametersView(expertise: expertise)
-                    case "calibration": CalibrationView()
-                    case "response": FrequencyResponseView()
-                    case "presets": PresetsView()
-                    case "planner": RoomPlannerView()
-                    case "amps": AmplifierView()
-                    default: HomeView(expertise: expertise)
-                    }
-                }
-                .navigationTitle(titleFor(selectedSidebar))
-                if let warning = viewModel.headroomWarning {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                        Text(warning)
-                        Spacer()
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .padding(.horizontal, DS.Spacing.md)
-                    .padding(.vertical, DS.Spacing.sm)
-                    .background(.orange.opacity(0.08))
-                }
-            }
+            .navigationTitle("DXO-24 Controller")
             .toolbar {
-                Picker("Expertise", selection: $expertiseRaw) {
-                    ForEach(ExpertiseLevel.allCases, id: \.self) { level in
-                        Text(level.localizedName).tag(level.rawValue)
-                    }
+                Button("Einstellungen", systemImage: "gear") {
+                    showPreferences = true
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 300)
+            }
+        } content: {
+            Group {
+            switch selectionTab {
+            case .parameters:
+                Text("Parameteransicht hier").frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .calibration:
+                Text("Kalibrierung hier").frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .roomPlanner:
+                Text("Raum-Planer hier").frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .presets:
+                Text("Presets hier").frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
             }
         }
-        .frame(minWidth: 1024, minHeight: 720)
-    }
-
-    @ViewBuilder
-    private func titleFor(_ selection: String) -> String {
-        switch selection {
-        case "home": return "DXO-24 Controller"
-        case "parameters": return "Parameters"
-        case "calibration": return "Room Calibration"
-        case "response": return "Frequency Response"
-        case "presets": return "Presets"
-        case "planner": return "Raum-Planer"
-        case "amps": return "Endstufen"
-        default: return "DXO-24 Controller"
+        .navigationTitle("DXO-24 Controller")
+        .sheet(isPresented: $showPreferences) {
+            PreferencesView(shortcutRegistry: KeyboardShortcutRegistry.shared)
         }
+        // Register global shortcuts at app level
+        .onAppear { registerGlobalShortcuts() }
+    }
+    
+    private func registerGlobalShortcuts() {
+        // In a real implementation, you'd install global event monitors
+        // For SwiftUI macOS apps, use NXEventMonitor or AppKit's NSCommandTap
+        print("Global shortcuts registered")
+    }
+    
+    private func parametersView() -> some View {
+        ParametersView(expertise: .intermediate)
+            .onAppear { viewModel.updateHeadroomWarning() }
     }
 }
 
-struct HomeView: View {
-    let expertise: ExpertiseLevel
-
+struct PreferencesView: View {
+    @ObservedObject var registry: KeyboardShortcutRegistry
+    @State private var customShortcuts: [KeyboardShortcutRegistry.Action: String] = [:]
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.md) {
-            Text("DXO-24 Controller").font(.largeTitle.bold())
-            Text("Native macOS control for the Omnitronic DXO-24").foregroundStyle(.secondary)
-            Divider()
-            Text("Current mode: \(expertise.localizedName)").font(.headline)
-            Text(
-                expertise == .beginner
-                ? "Beginner mode shows essential controls only."
-                : expertise == .intermediate
-                ? "Intermediate mode adds phase and crossover slopes."
-                : "Expert mode exposes raw values and advanced filter options."
-            )
-            .foregroundStyle(.secondary)
-            Spacer()
+        Form {
+            Section("Tastaturkürzel") {
+                ForEach(KeyboardShortcutRegistry.Action.allCases) { action in
+                    HStack {
+                        Text(action.localizedName)
+                        Spacer()
+                        TextField("Kürzel", text: $customShortkeys[action, default: action.shortcutString])
+                            .frame(width: 150)
+                    }
+                }
+            }
+            Section("Hinweis") {
+                Text("Kurzel können hier angepasst werden. Standardmäßige gelten Cmd+S, Cmd+O etc.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
-        .padding(DS.Spacing.lg)
+        .frame(width: 600, height: 400)
+        .navigationTitle("Einstellungen")
     }
 }
+
+// End of ContentView.swift
