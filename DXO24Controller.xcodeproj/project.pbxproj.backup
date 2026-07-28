@@ -15,28 +15,10 @@
 		A0011 /* DesignSystem in Sources */ = {isa = PBXBuildFile; fileRef = A0012 /* DesignSystem */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXBuildFile extension */
-		A1001 /* RealCommunication.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1002 /* RealCommunication.swift */; };
-		A1003 /* DeviceDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1004 /* DeviceDiscovery.swift */; };
-		A1005 /* Amplifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1006 /* Amplifier.swift */; };
-		A1007 /* AmplifierService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1008 /* AmplifierService.swift */; };
-		A1009 /* RoomPlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1010 /* RoomPlannerView.swift */; };
-		A1011 /* AmplifierView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1012 /* AmplifierView.swift */; };
-/* End PBXBuildFile extension */
-
 /* Begin PBXFileReference section */
 		A0002 /* DXO24ControllerApp.swift */ = {isa = PBXFileReference; path = DXO24ControllerApp.swift; sourceTree = "<group>"; };
 		A0013 /* DXO24Controller.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DXO24Controller.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileReference extension */
-		A1002 /* RealCommunication.swift */ = {isa = PBXFileReference; path = RealCommunication.swift; sourceTree = "<group>"; };
-		A1004 /* DeviceDiscovery.swift */ = {isa = PBXFileReference; path = DeviceDiscovery.swift; sourceTree = "<group>"; };
-		A1006 /* Amplifier.swift */ = {isa = PBXFileReference; path = Amplifier.swift; sourceTree = "<group>"; };
-		A1008 /* AmplifierService.swift */ = {isa = PBXFileReference; path = AmplifierService.swift; sourceTree = "<group>"; };
-		A1010 /* RoomPlannerView.swift */ = {isa = PBXFileReference; path = RoomPlannerView.swift; sourceTree = "<group>"; };
-		A1012 /* AmplifierView.swift */ = {isa = PBXFileReference; path = AmplifierView.swift; sourceTree = "<group>"; };
-/* End PBXFileReference extension */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A0014 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
@@ -44,13 +26,13 @@
 
 /* Begin PBXGroup section */
 		A0015 = {isa = PBXGroup; children = (A0002 /* DXO24ControllerApp.swift */, A0004 /* Models */, A0006 /* ViewModels */, A0008 /* Views */, A0010 /* Services */, A0012 /* DesignSystem */); path = DXO24Controller; sourceTree = "<group>"; };
-		A0004 /* Models */ = {isa = PBXGroup; children = (A0016 /* DXO24Device.swift */, A0017 /* EQBand.swift */, A0018 /* ExpertiseLevel.swift */, A0019 /* Preset.swift */, A0020 /* RoomParameters.swift */, A0021 /* SpeakerModel.swift */, A1006 /* Amplifier.swift */); path = Models; sourceTree = "<group>"; };
+		A0004 /* Models */ = {isa = PBXGroup; children = (A0016 /* DXO24Device.swift */, A0017 /* EQBand.swift */, A0018 /* ExpertiseLevel.swift */, A0019 /* Preset.swift */, A0020 /* RoomParameters.swift */, A0021 /* SpeakerModel.swift */); path = Models; sourceTree = "<group>"; };
 		A0006 /* ViewModels */ = {isa = PBXGroup; children = (A0022 /* DeviceViewModel.swift */); path = ViewModels; sourceTree = "<group>"; };
-		A0008 /* Views */ = {isa = PBXGroup; children = (A0023 /* CalibrationView.swift */, A0024 /* CalibrationWizard.swift */, A0025 /* ContentView.swift */, A0026 /* FrequencyResponseView.swift */, A0027 /* InfoCard.swift */, A0028 /* ParametersView.swift */, A0029 /* PresetsView.swift */, A1010 /* RoomPlannerView.swift */, A1012 /* AmplifierView.swift */); path = Views; sourceTree = "<group>"; };
-		A0010 /* Services */ = {isa = PBXGroup; children = (A0030 /* CalculationService.swift */, A0031 /* Audio */, A0032 /* Communication */, A1008 /* AmplifierService.swift */); path = Services; sourceTree = "<group>"; };
+		A0008 /* Views */ = {isa = PBXGroup; children = (A0023 /* CalibrationView.swift */, A0024 /* CalibrationWizard.swift */, A0025 /* ContentView.swift */, A0026 /* FrequencyResponseView.swift */, A0027 /* InfoCard.swift */, A0028 /* ParametersView.swift */, A0029 /* PresetsView.swift */); path = Views; sourceTree = "<group>"; };
+		A0010 /* Services */ = {isa = PBXGroup; children = (A0030 /* CalculationService.swift */, A0031 /* Audio */, A0032 /* Communication */); path = Services; sourceTree = "<group>"; };
 		A0012 /* DesignSystem */ = {isa = PBXGroup; children = (A0033 /* Core.swift */, A0034 /* Tokens.swift */); path = DesignSystem; sourceTree = "<group>"; };
 		A0031 /* Audio */ = {isa = PBXGroup; children = (A0035 /* MeasurementEngine.swift */, A0036 /* MeasurementService.swift */); path = Audio; sourceTree = "<group>"; };
-		A0032 /* Communication */ = {isa = PBXGroup; children = (A0037 /* CommunicationError.swift */, A0038 /* DXO24CommunicationProtocol.swift */, A0039 /* StubCommunication.swift */, A1002 /* RealCommunication.swift */, A1004 /* DeviceDiscovery.swift */); path = Communication; sourceTree = "<group>"; };
+		A0032 /* Communication */ = {isa = PBXGroup; children = (A0037 /* CommunicationError.swift */, A0038 /* DXO24CommunicationProtocol.swift */, A0039 /* StubCommunication.swift */); path = Communication; sourceTree = "<group>"; };
 		A0040 = {isa = PBXGroup; children = (A0013 /* DXO24Controller.app */, A0015); name = DXO24Controller; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -67,7 +49,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A0044 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A0001 /* DXO24ControllerApp.swift in Sources */, A0003 /* Models in Sources */, A0005 /* ViewModels in Sources */, A0007 /* Views in Sources */, A0009 /* Services in Sources */, A0011 /* DesignSystem in Sources */, A1001 /* RealCommunication.swift in Sources */, A1003 /* DeviceDiscovery.swift in Sources */, A1005 /* Amplifier.swift in Sources */, A1007 /* AmplifierService.swift in Sources */, A1009 /* RoomPlannerView.swift in Sources */, A1011 /* AmplifierView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+		A0044 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A0001 /* DXO24ControllerApp.swift in Sources */, A0003 /* Models in Sources */, A0005 /* ViewModels in Sources */, A0007 /* Views in Sources */, A0009 /* Services in Sources */, A0011 /* DesignSystem in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
