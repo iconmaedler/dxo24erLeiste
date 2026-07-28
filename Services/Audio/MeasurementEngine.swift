@@ -21,18 +21,29 @@ struct MeasurementEngine {
         case audioSessionUnavailable
         case recordingFailed
         case playbackFailed
+        case calibrationFileMissing
 
         var errorDescription: String? {
             switch self {
             case .audioSessionUnavailable: return "Audio session could not be initialized."
             case .recordingFailed:         return "Microphone recording failed."
             case .playbackFailed:          return "Playback of sweep signal failed."
+            case .calibrationFileMissing:  return "Calibration file not found."
             }
         }
     }
 
     /// Runs a logarithmic sweep for `duration` seconds, captures the response, and returns the FFT bins.
     static func measureRoomResponse(duration: TimeInterval = 15.0) async throws -> [FrequencyBin] {
+        // Setup audio session
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setCategory(.record, mode: .measurement, options: [.mixWithOthers, .allowBluetooth])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            throw MeasurementError.audioSessionUnavailable
+        }
+
         let engine = AVAudioEngine()
         let player = AVAudioPlayerNode()
         let inputNode = engine.inputNode
@@ -40,7 +51,10 @@ struct MeasurementEngine {
 
         // Attach and connect player -> output
         engine.attach(player)
-        engine.connect(player, to: outputNode, format: outputNode.inputFormat(forBus: 0))
+        guard let outputFormat = outputNode.inputFormat(forBus: 0) else {
+            throw MeasurementError.playbackFailed
+        }
+        engine.connect(player, to: outputNode, format: outputFormat)
 
         // Capture buffer for input tap
         let capture = SampleCaptureBuffer()
@@ -49,14 +63,21 @@ struct MeasurementEngine {
         inputNode.installTap(onBus: 0,
                               bufferSize: AVAudioFrameCount(defaultFFTSize),
                               format: inputFormat) { buffer, _ in
-            capture.append(buffer: buffer)
+            guard let floatData = buffer.floatChannelData else { return }
+            let channel = floatData[0]
+            let count = Int(buffer.frameLength)
+            capture.append(samples: Array(UnsafeBufferPointer(start: channel, count: count)))
         }
 
         // Start engine
-        try engine.start()
+        do {
+            try engine.start()
+        } catch {
+            throw MeasurementError.playbackFailed
+        }
 
         // Generate and play sweep
-        let sweepBuffer = try generateLogarithmicSweep(duration: duration)
+        let sweepBuffer = try generateLogarithmicSweep(duration: duration, format: outputFormat)
         player.play()
         player.scheduleBuffer(sweepBuffer, at: nil, options: .interrupts, completionHandler: nil)
 
@@ -67,6 +88,8 @@ struct MeasurementEngine {
         engine.stop()
         inputNode.removeTap(onBus: 0)
 
+        try audioSession.setActive(false, options: .shouldInterruptOtherSound)
+
         let samples = capture.flush()
         guard samples.count >= defaultFFTSize else {
             throw MeasurementError.recordingFailed
@@ -74,16 +97,17 @@ struct MeasurementEngine {
 
         // FFT on the first window centered around the sweep response.
         let windowStart = max(0, (samples.count - defaultFFTSize) / 2)
-        let windowSlice = Array(samples[windowStart..<(windowStart + defaultFFTSize)])
+        let windowSlice = Array(samples[windowStart..<windowStart + defaultFFTSize])
         let magnitudes = try performRealFFT(on: windowSlice)
 
         // Map bins to frequencies
         var result: [FrequencyBin] = []
         let binCount = magnitudes.count
         let freqResolution = defaultSampleRate / Double(binCount)
-        for (i, mag) in magnitudes.enumerated() {
+        for i in 0..<binCount {
             let freq = Double(i) * freqResolution
-            let db = 20.0 * log10(max(Double(mag), 1e-12))
+            guard freq >= 20 && freq <= 20_000 else { continue } // Filter extreme edges
+            let db = 20.0 * log10(max(Double(magnitudes[i]), 1e-12))
             result.append(FrequencyBin(frequency: freq, magnitude: db))
         }
         return result
@@ -91,20 +115,20 @@ struct MeasurementEngine {
 
     // MARK: - Sweep generator (logarithmic 20 Hz -> 20 kHz)
 
-    private static func generateLogarithmicSweep(duration: TimeInterval) throws -> AVAudioPCMBuffer {
-        let sampleRate = Float(defaultSampleRate)
+    private static func generateLogarithmicSweep(duration: TimeInterval, format: AVAudioFormat) throws -> AVAudioPCMBuffer {
+        let sampleRate = Float(format.sampleRate)
         let frameCount = UInt32(duration * Double(sampleRate))
-        let format = AVAudioFormat(standardFormatWithSampleRate: Double(sampleRate), channels: 1)!
+        let channels = format.channelCount
 
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
             throw MeasurementError.playbackFailed
         }
         buffer.frameLength = frameCount
+        buffer.fill(float: 0.0)
 
         guard let channelData = buffer.floatChannelData?.pointee else {
             throw MeasurementError.playbackFailed
         }
-        let channels = UnsafeMutableBufferPointer(start: channelData, count: Int(frameCount))
 
         let sweepStart: Float = 20.0
         let sweepEnd: Float = 20_000.0
@@ -117,7 +141,12 @@ struct MeasurementEngine {
             let logF = logStart + t * logRange
             let f = powf(2.0, logF)
             let angle = 2.0 * .pi * f * (Float(n) / sampleRate)
-            channels[n] = sinf(angle) * 0.5
+            let value = sinf(angle) * 0.5
+            
+            // Write to all channels for multi-channel audio
+            for ch in 0..<channels {
+                channelData[ch * Int(frameCount) + n] = value
+            }
         }
         return buffer
     }
@@ -129,41 +158,37 @@ struct MeasurementEngine {
         guard n > 0, (n & (n - 1)) == 0 else {
             throw MeasurementError.playbackFailed // must be power of two
         }
-        let log2n = vDSP_Length(log2(Float(n)))
-
-        guard let fftSetup = vDSP_create_fftsetup(log2n, FFTRadix(kFFTRadix2)) else {
+        guard let fftSetup = vDSP_create_fftsetup(vDSP_Length(log2(Float(n))), FFTRadix(kFFTRadix2)) else {
             throw MeasurementError.playbackFailed
         }
-        defer { vDSP_destroy_fftsetup(fftSetup) }
-
+        
         var real = samples
         var imag = [Float](repeating: 0, count: n)
         var split = DSPSplitComplex(realp: &real, imagp: &imag)
 
-        vDSP_fft_zip(fftSetup, &split, 1, log2n, FFTDirection(FFT_FORWARD))
+        vDSP_fft_zip(fftSetup, &split, 1, vDSP_Length(log2(Float(n))), FFTDirection(FFT_FORWARD))
 
         var magnitudes = [Float](repeating: 0, count: n / 2)
         vDSP_zvmags(&split, 1, &magnitudes, 1, vDSP_Length(magnitudes.count))
 
+        // Convert to amplitude (square root of magnitude squared)
         var amplitudes = [Float](repeating: 0, count: magnitudes.count)
         vDSP_vsqrt(magnitudes, 1, &amplitudes, 1, vDSP_Length(amplitudes.count))
+        
+        vDSP_destroy_fftsetup(fftSetup)
         return amplitudes
     }
 }
 
 // MARK: - Thread-safe capture buffer
 
-private final class SampleCaptureBuffer: @unchecked Sendable {
+final class SampleCaptureBuffer: @unchecked Sendable {
     private var samples: [Float] = []
     private let lock = NSLock()
 
-    func append(buffer: AVAudioPCMBuffer) {
-        guard let channelData = buffer.floatChannelData else { return }
-        let channel = channelData[0]
-        let count = Int(buffer.frameLength)
-        let pointer = UnsafeBufferPointer(start: channel, count: count)
+    append(samples: [Float]) {
         lock.lock()
-        samples.append(contentsOf: pointer)
+        samples.append(contentsOf: samples)
         lock.unlock()
     }
 

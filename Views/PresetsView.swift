@@ -8,6 +8,7 @@ struct PresetsView: View {
     @State private var presets: [Preset] = []
     @State private var newName: String = "New Preset"
     @State private var loadURL: URL?
+    @State private var presentationError: String?
     @EnvironmentObject private var viewModel: DeviceViewModel
 
     var body: some View {
@@ -30,6 +31,11 @@ struct PresetsView: View {
         }
         .padding()
         .onAppear { reloadFromDisk() }
+        .alert("Error", isPresented: $presentationError.map { _ in true }) {
+            Button("OK") {}
+        } message: {
+            Text("Failed to save preset: check disk space or permissions.")
+        }
     }
 
     // MARK: - Actions
@@ -44,10 +50,11 @@ struct PresetsView: View {
         presets.append(preset)
         do {
             try PresetService.save(preset)
+            newName = ""
         } catch {
-            // In a later iteration, surface this to the UI.
+            presentationError = error.localizedDescription
+            // In a production app, show this to the user more prominently
         }
-        newName = ""
     }
 
     private func loadSelected() {
@@ -60,35 +67,30 @@ struct PresetsView: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
-        panel.directoryURL = PresetService.presetsDirectory
+        panel.directoryURL = PresetService.presetsDirectory ?? URL(fileURLWithPath: "/")
         guard panel.runModal() == .modalResponseOK, let url = panel.url else { return }
         loadURL = url
     }
 
     private func reloadFromDisk() {
-        presets = (try? PresetService.listPresets().compactMap { try? PresetService.load(from: $0) }) ?? []
+        do {
+            let urls = try PresetService.listPresets()
+            presets = try urls.compmap { try PresetService.load(from: $0) }
+        } catch {
+            presets = []
+            // PresentationError would be handled in save operations
+        }
     }
 
-    // MARK: - Demo data
+    // MARK: - Demo data (removed - was never called and dead code)
+    // The demoPresets() function from earlier versions has been removed as it was never invoked.
+}
 
-    private static func demoPresets() -> [Preset] {
-        [
-            Preset(name: "Flat", deviceState: .flatPreset),
-            Preset(name: "DJ Standard", deviceState: {
-                var d: DXO24Device = .flatPreset
-                d.crossoverFrequency = 100
-                d.crossoverSlope = 24
-                d.outputLevel = 0
-                d.inputLevel = -6
-                return d
-            }()),
-            Preset(name: "Speech", deviceState: {
-                var d: DXO24Device = .flatPreset
-                d.crossoverFrequency = 120
-                d.crossoverSlope = 48
-                d.limiterThreshold = -6
-                return d
-            }()),
-        ]
+extension Optional {
+    // Helper for compactMap that returns nil for failures
+    func compmap<T>(_ body: throws() throws(T)) -> [T] {
+        self.compactMap { try? body() }
     }
 }
+
+// End of PresetsView.swift

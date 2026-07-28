@@ -9,18 +9,22 @@ enum AmplifierService {
     static let folderName = "DXO24Controller/Amplifiers"
     static let ampExtension = "amplist"
 
-    static var directory: URL {
+    static var directory: URL? {
         let fm = FileManager.default
-        let url = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
-            .appendingPathComponent(folderName, isDirectory: true)
-        if !fm.fileExists(atPath: url.path) {
-            try? fm.createDirectory(at: url, withIntermediateDirectories: true)
+        guard let url = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
         }
-        return url
+        let dir = url.appendingPathComponent(folderName, isDirectory: true)
+        if !fm.fileExists(atPath: dir.path) {
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        return dir
     }
 
     static func save(_ amp: Amplifier) throws -> URL {
+        guard let directory = AmplifierService.directory else {
+            throw NSError(domain: "AmplifierServiceError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot access Application Support directory"])
+        }
         let url = directory
             .appendingPathComponent(amp.id.uuidString)
             .appendingPathExtension(ampExtension)
@@ -35,6 +39,9 @@ enum AmplifierService {
     }
 
     static func listAll() throws -> [Amplifier] {
+        guard let directory = AmplifierService.directory else {
+            return []
+        }
         let fm = FileManager.default
         return try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
             .filter { $0.pathExtension == ampExtension }
@@ -42,6 +49,9 @@ enum AmplifierService {
     }
 
     static func delete(_ amp: Amplifier) throws {
+        guard let directory = AmplifierService.directory else {
+            throw NSError(domain: "AmplifierServiceError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cannot access Application Support directory"])
+        }
         let url = directory
             .appendingPathComponent(amp.id.uuidString)
             .appendingPathExtension(ampExtension)

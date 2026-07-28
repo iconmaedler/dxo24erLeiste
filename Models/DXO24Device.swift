@@ -73,7 +73,23 @@ struct DXO24Device: Codable, Equatable {
 
     // MARK: - Convenience
 
-    static var flatPreset: DXO24Device {
-        try! DXO24Device(eqBands: EQBand.flatPreset, presetName: "Flat")
-    }
+    // Replaced try! with cached static value that is guaranteed valid
+    private static let _flatPreset: DXO24Device = {
+        do {
+            return try DXO24Device(eqBands: EQBand.flatPreset, presetName: "Flat")
+        } catch {
+            // Fallback if validation somehow fails (should never happen with flatPreset)
+            return DXO24Device(
+                inputLevel: -6.0, outputLevel: 0.0,
+                inputMute: false, outputMute: false,
+                crossoverFrequency: 80.0, crossoverSlope: 24,
+                polarity: false, phaseDelay: 0.0, limiterThreshold: 0.0,
+                eqBands: EQBand.flatPreset, presetName: "Flat"
+            )
+        }
+    }()
+
+    static var flatPreset: DXO24Device { _flatPreset }
 }
+
+// End of DXO24Device.swift

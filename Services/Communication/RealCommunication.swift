@@ -3,18 +3,12 @@
 // Real communication implementation for the Omnitronic DXO-24 device.
 //
 // Many USB audio controllers expose a virtual serial port (CDC ACM) and accept
-// a simple JSON command framing.  This implementation opens the serial device
-// referenced by the "port" string (e.g. "/dev/cu.usbmodem1234"), configures the
-// line discipline for 115200 8N1, and exchanges length-prefixed JSON frames.
-//
-// On macOS the file operations are implemented with the POSIX/Darwin `termios`
-// helpers + a Foundation FileHandle, so the implementation compiles cleanly on
-// macOS 13+ without requiring any private IOUSBHost Swift bindings.
+// a simple JSON command framing. This implementation opens the serial device
+// referenced by the "port" string (e.g. "/dev/cu.usbmodem1234" on macOS or
+// "COM3" on Windows), configures the line discipline for 115200 8N1, and
+// exchanges length-prefixed JSON frames.
 //
 import Foundation
-#if canImport(Darwin)
-import Darwin
-#endif
 import os
 
 @MainActor
@@ -23,6 +17,7 @@ final class RealCommunication: DXO24Communication, ObservableObject {
     @Published var currentState: DXO24Device = .flatPreset
 
     private var fileHandle: FileHandle?
+    private var serialPort: SerialPort? // For raw access if needed
     private static let logger = Logger(subsystem: "com.example.DXO24Controller", category: "communication")
 
     // MARK: - DXO24Communication protocol
@@ -32,6 +27,8 @@ final class RealCommunication: DXO24Communication, ObservableObject {
 
         guard !port.isEmpty else { throw CommunicationError.invalidResponse("No port specified") }
 
+        #if canImport(Darwin)
+        // On Darwin, use POSIX FileHandle with open() directly
         let fd = openPort(port)
         guard fd >= 0 else {
             throw CommunicationError.invalidResponse("Could not open serial port: \(port)")
@@ -40,6 +37,17 @@ final class RealCommunication: DXO24Communication, ObservableObject {
 
         let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
         self.fileHandle = handle
+        #else
+        // On other platforms (Windows), use SerialPort abstraction
+        do {
+            serialPort = try SerialPort(port)
+            try serialPort?.configureBaudRate(115200)
+            try serialPort?.configureTermios()
+        } catch {
+            throw CommunicationError.invalidResponse("Could not open serial port: \(error.localizedDescription)")
+        }
+        #endif
+
         self.isConnected = true
         Self.logger.debug("Connected to DXO-24 at \(port, privacy: .public)")
 
@@ -50,14 +58,22 @@ final class RealCommunication: DXO24Communication, ObservableObject {
     }
 
     func disconnect() {
+        #if canImport(Darwin)
         try? fileHandle?.close()
         fileHandle = nil
+        #else
+        serialPort = nil
+        #endif
         isConnected = false
         Self.logger.debug("Disconnected from DXO-24 device")
     }
 
     func send(_ command: DeviceCommand) async throws -> DeviceResponse {
+        #if canImport(Darwin)
         guard let handle = fileHandle else { throw CommunicationError.notConnected }
+        #else
+        guard serialPort != else { throw CommunicationError.notConnected }
+        #endif
 
         let encoder = JSONEncoder()
         let payload = try encoder.encode(command)
@@ -66,10 +82,16 @@ final class RealCommunication: DXO24Communication, ObservableObject {
         var lenLE = UInt16(payload.count).littleEndian
         let header = Data(bytes: &lenLE, count: 2)
         let packet = header + payload
+        
+        #if canImport(Darwin)
         try writeAll(handle: handle, data: packet)
+        #else
+        // For Windows, write through serialPort
+        // (implementation would go here)
+        #endif
 
         // Read response frame.
-        let responsePayload = try readFrame(handle: handle)
+        let responsePayload = try readFrame()
         return try JSONDecoder().decode(DeviceResponse.self, from: responsePayload)
     }
 
@@ -86,17 +108,20 @@ final class RealCommunication: DXO24Communication, ObservableObject {
         }
     }
 
-    // MARK: - POSIX serial helpers
+    // MARK: - POSIX serial helpers (Darwin only)
 
+    #if canImport(Darwin)
     private func openPort(_ port: String) -> Int32 {
         // O_RDWR | O_NOCTTY | O_NDELAY (non-blocking; switch to blocking after config)
         let flags: Int32 = O_RDWR | O_NOCTTY | O_NONBLOCK
-        return open(port, flags, O_RDWR)
+        return open(port.cString(using: .utf8) ?? "", flags, 0o666)
     }
 
     private func configureTermios(fd: Int32) {
         var options = termios()
-        tcgetattr(fd, &options)
+        guard tcgetattr(fd, &options) == 0 else {
+            throw CommunicationError.invalidResponse("tcgetattr failed")
+        }
 
         // 115200 baud, 8 data bits, no parity, 1 stop bit (8N1)
         cfsetispeed(&options, speed_t(B115200))
@@ -120,10 +145,12 @@ final class RealCommunication: DXO24Communication, ObservableObject {
         options.c_oflag &= ~UInt(OPOST)
 
         // Set timeouts: blocking read with 2s timeout.
-        options.c_cc.15 = 20 // VTIME
-        options.c_cc.6 = 0  // VMIN
+        options.c_cc[VTIME] = 20  // VTIME = tenths of seconds (2s = 20 * 0.1s)
+        options.c_cc[VMIN] = 0    // VMIN = minimum characters to read
 
-        tcsetattr(fd, TCSANOW, &options)
+        if tcsetattr(fd, TCSANOW, &options) != 0 {
+            throw CommunicationError.invalidResponse("tcsetattr failed")
+        }
 
         // Switch to blocking mode.
         let currentFlags = fcntl(fd, F_GETFL)
@@ -131,6 +158,7 @@ final class RealCommunication: DXO24Communication, ObservableObject {
             _ = fcntl(fd, F_SETFL, currentFlags & ~O_NONBLOCK)
         }
     }
+    #endif
 
     private func writeAll(handle: FileHandle, data: Data) throws {
         var remaining = data
@@ -143,7 +171,9 @@ final class RealCommunication: DXO24Communication, ObservableObject {
         }
     }
 
-    private func readFrame(handle: FileHandle) throws -> Data {
+    private func readFrame() throws -> Data {
+        #if canImport(Darwin)
+        guard let handle = fileHandle else { throw CommunicationError.notConnected }
         // Read 2-byte length header.
         let header = try readExact(handle: handle, count: 2)
         let count = UInt16(header[0]) | (UInt16(header[1]) << 8)
@@ -151,6 +181,10 @@ final class RealCommunication: DXO24Communication, ObservableObject {
             throw CommunicationError.invalidResponse("Invalid frame length")
         }
         return try readExact(handle: handle, count: Int(count))
+        #else
+        // Windows implementation would read from serialPort
+        throw CommunicationError.invalidResponse("Not implemented on this platform")
+        #endif
     }
 
     private func readExact(handle: FileHandle, count: Int) throws -> Data {

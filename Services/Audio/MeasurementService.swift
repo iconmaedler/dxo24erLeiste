@@ -31,7 +31,15 @@ enum MeasurementService {
     /// the first AVAudioEngine input tap is installed; this method is a no-op shim.
     static func requestMicrophonePermission() async -> Bool {
         // No explicit API on macOS.  The TCC prompt fires on first input tap.
-        true
+        // We try to activate the audio session to potentially trigger the prompt.
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.record, mode: .measurement, options: [.mixWithOthers, .allowBluetooth])
+            try audioSession.setActive(true)
+            return true
+        } catch {
+            return false
+        }
     }
 
     /// Runs a calibration sweep and returns an array of (frequency, magnitude) tuples.

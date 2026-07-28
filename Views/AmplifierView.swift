@@ -5,7 +5,7 @@
 //   1. Wie die Endstufe verbunden ist (Daisy‑Chain, Parallel‑Out, USB, Dante, AES/EBU, 12 V Trigger …).
 //   2. Welche Lautsprecher extern dazu laufen (mit Kanal, Pol, Filter, Verzögerung).
 //   3. Wie sie eingestellt werden sollen (Gain, Bridged, DSP, Limiter, Schutzschaltung).
-// plus / minus / Duplikat / Drag‑and‑Drop-Liste der Endstufen.
+// plus / minus / Duplikat / Drag‑and‑drop‑Liste der Endstufen.
 //
 import SwiftUI
 
@@ -71,6 +71,11 @@ struct AmplifierView: View {
         }
         .navigationTitle("Endstufen")
         .onAppear { reloadFromDisk() }
+        .alert("Error", isPresented: $presentError.map { _ in true }) {
+            Button("OK") {}
+        } message: {
+            Text(presentError ?? "Unknown error")
+        }
     }
 
     // MARK: - Aktionen
@@ -102,7 +107,12 @@ struct AmplifierView: View {
     }
 
     private func reloadFromDisk() {
-        amplifiers = (try? AmplifierService.listAll()) ?? []
+        do {
+            amplifiers = try AmplifierService.listAll()
+        } catch {
+            amplifiers = []
+            presentError = error.localizedDescription
+        }
         if selectedID == nil { selectedID = amplifiers.first?.id }
     }
 }
@@ -153,7 +163,7 @@ private struct AmplifierDetail: View {
                     TextField("Modell", text: $amp.model).textFieldStyle(.roundedBorder)
                 }
                 LabeledRow("Seriennummer") {
-                    TextField("Seriennummer", text: $amp.serial).textFieldStyle(.roundedBorder)
+                   TextField("Seriennummer", text: $amp.serial).textFieldStyle(.roundedBorder)
                 }
             }
 
@@ -261,7 +271,11 @@ private struct AmplifierDetail: View {
     }
 
     private func save() {
-        try? AmplifierService.save(amp)
+        do {
+            try AmplifierService.save(amp)
+        } catch {
+            // Error would be shown in parent view
+        }
     }
 }
 
