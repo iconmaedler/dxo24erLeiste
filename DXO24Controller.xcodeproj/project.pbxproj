@@ -1,3 +1,1 @@
-rm: unknown option -- p
-Try 'rm ./-p' to remove the file '-p'.
-Try 'rm --help' for more information.
+rm: cannot remove 'DXO24Controller.xcodeproj/project.pbxproj': Device or resource busy
